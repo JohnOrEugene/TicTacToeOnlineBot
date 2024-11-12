@@ -19,6 +19,9 @@ public class Main extends TelegramLongPollingBot {
     private static String botUsername;
     private static String botToken;
 
+    // Экземпляр RoomManager для управления комнатами
+    private final RoomManager roomManager = new RoomManager();
+
     // Загрузка конфигурации
     static {
         Properties properties = new Properties();
@@ -48,17 +51,33 @@ public class Main extends TelegramLongPollingBot {
             if (message.hasText()) {
                 String userMessage = message.getText();
 
-                // Если пользователь только что присоединился или ввел /start
-                if (userMessage.equals("/start")) {
+                // Обработка команды /start
+                if (userMessage.equalsIgnoreCase("/start")) {
                     sendWelcomeMessage(message);
                 }
-                // Если пользователь нажал кнопку Info
-                else if (userMessage.equals("Info")) {
+                // Обработка команды Info
+                else if (userMessage.equalsIgnoreCase("Info")) {
                     sendInfoMessage(message);
                 }
-                // Если пользователь нажал кнопку Start
-                else if (userMessage.equals("Start")) {
+                // Обработка команды Start
+                else if (userMessage.equalsIgnoreCase("Start")) {
                     sendStartMessage(message);
+                }
+                // Обработка команды создания комнаты
+                else if (userMessage.equalsIgnoreCase("/create")) {
+                    createRoom(message);
+                }
+                // Обработка команды подключения к комнате
+                else if (userMessage.startsWith("/join")) {
+                    joinRoom(message);
+                }
+                // Обработка команды помощи
+                else if (userMessage.equalsIgnoreCase("/help") || userMessage.equalsIgnoreCase("help")) {
+                    sendHelpMessage(message);
+                }
+                // Обработка неверных команд
+                else {
+                    sendInvalidCommandMessage(message);
                 }
             }
         }
@@ -78,8 +97,9 @@ public class Main extends TelegramLongPollingBot {
 
         // Создаем строки с кнопками
         KeyboardRow row = new KeyboardRow();
-        row.add(new KeyboardButton("Info"));
-        row.add(new KeyboardButton("Start"));
+        row.add(new KeyboardButton("info"));
+        row.add(new KeyboardButton("start"));
+        row.add(new KeyboardButton("help"));
 
         keyboardRows.add(row);
         keyboardMarkup.setKeyboard(keyboardRows);
@@ -114,6 +134,77 @@ public class Main extends TelegramLongPollingBot {
 
         try {
             execute(startMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Метод для создания комнаты
+    private void createRoom(Message message) {
+        GameRoom newRoom = roomManager.createRoom(message.getFrom());
+        String roomCode = newRoom.getRoomCode();
+        SendMessage createMessage = new SendMessage();
+        createMessage.setChatId(message.getChatId().toString());
+        createMessage.setText("Комната создана. Код комнаты: " + roomCode);
+
+        try {
+            execute(createMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Метод для подключения к комнате по коду
+    private void joinRoom(Message message) {
+        String[] parts = message.getText().split(" ");
+        if (parts.length < 2) {
+            sendTextMessage(message.getChatId(), "Пожалуйста, укажите код комнаты, например: /join 123456");
+            return;
+        }
+
+        String roomCode = parts[1];
+        Long userId = message.getFrom().getId();
+        GameRoom room = roomManager.getRoom(roomCode);
+
+        // Проверка на то, является ли пользователь владельцем комнаты
+        if (room != null && room.getOwnerId().equals(userId)) {
+            sendTextMessage(message.getChatId(), "Вы являетесь создателем этой комнаты и не можете к ней присоединиться.");
+            return;
+        }
+
+        boolean joined = roomManager.joinRoom(roomCode, message.getFrom());
+        if (joined) {
+            sendTextMessage(message.getChatId(), "Вы успешно присоединились к комнате с кодом " + roomCode);
+        } else {
+            sendTextMessage(message.getChatId(), "Не удалось присоединиться. Комната не найдена или уже заполнена.");
+        }
+    }
+
+    // Метод для отправки сообщения помощи
+    private void sendHelpMessage(Message message) {
+        String helpText = """
+                Доступные команды:
+                /start - Перезапустить бота
+                /create - Создать новую комнату для игры
+                /join <код комнаты> - Присоединиться к существующей комнате
+                /help - Показать доступные команды
+                """;
+        sendTextMessage(message.getChatId(), helpText);
+    }
+
+    // Метод для обработки неверных команд
+    private void sendInvalidCommandMessage(Message message) {
+        sendTextMessage(message.getChatId(), "Неверная команда. Напишите 'help' для помощи.");
+    }
+
+    // Метод для отправки текстовых сообщений
+    private void sendTextMessage(Long chatId, String text) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText(text);
+
+        try {
+            execute(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
