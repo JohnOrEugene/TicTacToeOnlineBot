@@ -4,6 +4,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
@@ -19,10 +20,8 @@ public class Main extends TelegramLongPollingBot {
     private static String botUsername;
     private static String botToken;
 
-    // Экземпляр RoomManager для управления комнатами
     private final RoomManager roomManager = new RoomManager();
 
-    // Загрузка конфигурации
     static {
         Properties properties = new Properties();
         try (FileInputStream input = new FileInputStream("config.properties")) {
@@ -51,51 +50,112 @@ public class Main extends TelegramLongPollingBot {
             if (message.hasText()) {
                 String userMessage = message.getText();
 
-                // Обработка команды /start
                 if (userMessage.equalsIgnoreCase("/start")) {
                     sendWelcomeMessage(message);
-                }
-                // Обработка команды Info
-                else if (userMessage.equalsIgnoreCase("Info")) {
+                } else if (userMessage.equalsIgnoreCase("Info")) {
                     sendInfoMessage(message);
-                }
-                // Обработка команды Start
-                else if (userMessage.equalsIgnoreCase("Start")) {
+                } else if (userMessage.equalsIgnoreCase("Start")) {
                     sendStartMessage(message);
-                }
-                // Обработка команды создания комнаты
-                else if (userMessage.equalsIgnoreCase("/create")) {
+                } else if (userMessage.equalsIgnoreCase("/create")) {
                     createRoom(message);
-                }
-                // Обработка команды подключения к комнате
-                else if (userMessage.startsWith("/join")) {
+                } else if (userMessage.startsWith("/join")) {
                     joinRoom(message);
-                }
-                // Обработка команды помощи
-                else if (userMessage.equalsIgnoreCase("/help") || userMessage.equalsIgnoreCase("help")) {
+                } else if (userMessage.equalsIgnoreCase("/help") || userMessage.equalsIgnoreCase("help")) {
                     sendHelpMessage(message);
-                }
-                // Обработка неверных команд
-                else {
+                } else if (userMessage.startsWith("/move")) { // Новая команда для хода
+                    handleMove(message);
+                } else {
                     sendInvalidCommandMessage(message);
                 }
             }
         }
     }
 
-    // Метод отправки приветственного сообщения и отображения кнопок
+    // Обработчик хода
+    private void handleMove(Message message) {
+        String[] parts = message.getText().split(" ");
+        if (parts.length < 4) {
+            sendTextMessage(message.getChatId(), "Введите ход в формате: /move <код комнаты> <номер строки> <номер столбца>");
+            return;
+        }
+
+        String roomCode = parts[1];
+        int row, col;
+
+        try {
+            row = Integer.parseInt(parts[2]);
+            col = Integer.parseInt(parts[3]);
+        } catch (NumberFormatException e) {
+            sendTextMessage(message.getChatId(), "Введите числа для строки и столбца.");
+            return;
+        }
+
+        GameRoom room = roomManager.getRoom(roomCode);
+        if (room == null) {
+            sendTextMessage(message.getChatId(), "Комната не найдена. Убедитесь в правильности кода комнаты.");
+            return;
+        }
+
+        User player = message.getFrom();
+        if (!isPlayerTurn(room, player)) {
+            sendTextMessage(message.getChatId(), "Сейчас не ваш ход.");
+            return;
+        }
+
+        boolean moveSuccessful = room.makeMove(row, col);
+        if (!moveSuccessful) {
+            sendTextMessage(message.getChatId(), "Этот ход недоступен. Попробуйте другое место.");
+            return;
+        }
+
+        // Отправляем обновлённое состояние доски обоим игрокам
+        sendTextMessage(room.getPlayer1().getId(), room.getBoardDisplay());
+        sendTextMessage(room.getPlayer2().getId(), room.getBoardDisplay());
+
+        // Проверяем состояние игры
+        if (room.checkWin()) {
+            // Если есть победитель
+            String winnerMessage = "Поздравляем, " + player.getFirstName() + ", вы выиграли!";
+            String loserMessage = "К сожалению, вы проиграли. Победил игрок " + player.getFirstName();
+
+            if (room.getCurrentPlayer() == 'X') {
+                sendTextMessage(room.getPlayer1().getId(), winnerMessage);
+                sendTextMessage(room.getPlayer2().getId(), loserMessage);
+            } else {
+                sendTextMessage(room.getPlayer2().getId(), winnerMessage);
+                sendTextMessage(room.getPlayer1().getId(), loserMessage);
+            }
+            roomManager.removeRoom(room.getRoomCode()); // Удаляем комнату
+        } else if (room.isDraw()) {
+            // Если ничья
+            String drawMessage = "Игра окончена. Ничья!";
+            sendTextMessage(room.getPlayer1().getId(), drawMessage);
+            sendTextMessage(room.getPlayer2().getId(), drawMessage);
+            roomManager.removeRoom(room.getRoomCode()); // Удаляем комнату
+        }
+    }
+
+
+
+    // Проверка, чей ход
+    private boolean isPlayerTurn(GameRoom room, User player) {
+        if (room.getCurrentPlayer() == 'X') {
+            return room.getPlayer1().getId().equals(player.getId());
+        } else {
+            return room.getPlayer2().getId().equals(player.getId());
+        }
+    }
+
     private void sendWelcomeMessage(Message message) {
         SendMessage welcomeMessage = new SendMessage();
         welcomeMessage.setChatId(message.getChatId().toString());
         welcomeMessage.setText("Добро пожаловать! Выберите команду:");
 
-        // Устанавливаем клавиатуру с кнопками
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
-        keyboardMarkup.setResizeKeyboard(true);  // Клавиатура подстраивается под размер экрана
+        keyboardMarkup.setResizeKeyboard(true);
 
         List<KeyboardRow> keyboardRows = new ArrayList<>();
 
-        // Создаем строки с кнопками
         KeyboardRow row = new KeyboardRow();
         row.add(new KeyboardButton("info"));
         row.add(new KeyboardButton("start"));
@@ -113,7 +173,6 @@ public class Main extends TelegramLongPollingBot {
         }
     }
 
-    // Метод для отправки информации об авторе
     private void sendInfoMessage(Message message) {
         SendMessage infoMessage = new SendMessage();
         infoMessage.setChatId(message.getChatId().toString());
@@ -126,7 +185,6 @@ public class Main extends TelegramLongPollingBot {
         }
     }
 
-    // Метод для отправки сообщения о начале игры
     private void sendStartMessage(Message message) {
         SendMessage startMessage = new SendMessage();
         startMessage.setChatId(message.getChatId().toString());
@@ -139,7 +197,6 @@ public class Main extends TelegramLongPollingBot {
         }
     }
 
-    // Метод для создания комнаты
     private void createRoom(Message message) {
         GameRoom newRoom = roomManager.createRoom(message.getFrom());
         String roomCode = newRoom.getRoomCode();
@@ -154,7 +211,6 @@ public class Main extends TelegramLongPollingBot {
         }
     }
 
-    // Метод для подключения к комнате по коду
     private void joinRoom(Message message) {
         String[] parts = message.getText().split(" ");
         if (parts.length < 2) {
@@ -166,7 +222,6 @@ public class Main extends TelegramLongPollingBot {
         Long userId = message.getFrom().getId();
         GameRoom room = roomManager.getRoom(roomCode);
 
-        // Проверка на то, является ли пользователь владельцем комнаты
         if (room != null && room.getOwnerId().equals(userId)) {
             sendTextMessage(message.getChatId(), "Вы являетесь создателем этой комнаты и не можете к ней присоединиться.");
             return;
@@ -174,30 +229,35 @@ public class Main extends TelegramLongPollingBot {
 
         boolean joined = roomManager.joinRoom(roomCode, message.getFrom());
         if (joined) {
-            sendTextMessage(message.getChatId(), "Вы успешно присоединились к комнате с кодом " + roomCode);
+            // Уведомляем обоих игроков о начале игры
+            String playerName = message.getFrom().getFirstName();
+
+            // Вместо room.getPlayer1().getChatId(), используем message.getChatId() для получения чата
+            sendTextMessage(room.getPlayer1().getId(), "Вы успешно присоединились к комнате с кодом " + roomCode + ". Игра началась! Ход первого игрока: " + room.getCurrentPlayer() + " " + room.getPlayer1().getFirstName() + "\nДля хода введите /move_<код комнаты>_<строчка>_<столбец>");
+            sendTextMessage(room.getPlayer2().getId(), "Вы успешно присоединились к комнате с кодом " + roomCode + ". Игра началась! Ход первого игрока: " + room.getCurrentPlayer() + " " + room.getPlayer1().getFirstName() + "\nДля хода введите /move_<код комнаты>_<строчка>_<столбец>");
         } else {
             sendTextMessage(message.getChatId(), "Не удалось присоединиться. Комната не найдена или уже заполнена.");
         }
+
     }
 
-    // Метод для отправки сообщения помощи
+
     private void sendHelpMessage(Message message) {
         String helpText = """
                 Доступные команды:
                 /start - Перезапустить бота
                 /create - Создать новую комнату для игры
                 /join <код комнаты> - Присоединиться к существующей комнате
+                /move <код комнаты> <строка> <столбец> - Сделать ход
                 /help - Показать доступные команды
                 """;
         sendTextMessage(message.getChatId(), helpText);
     }
 
-    // Метод для обработки неверных команд
     private void sendInvalidCommandMessage(Message message) {
         sendTextMessage(message.getChatId(), "Неверная команда. Напишите 'help' для помощи.");
     }
 
-    // Метод для отправки текстовых сообщений
     private void sendTextMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());

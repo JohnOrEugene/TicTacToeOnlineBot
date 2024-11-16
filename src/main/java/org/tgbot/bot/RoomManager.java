@@ -1,7 +1,6 @@
 package org.tgbot.bot;
 
 import org.telegram.telegrambots.meta.api.objects.User;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -48,5 +47,10 @@ public class RoomManager {
     // Метод для удаления завершённой комнаты
     public void removeRoom(String roomCode) {
         activeRooms.remove(roomCode);
+    }
+
+    // Метод для очистки завершенных игр
+    public void cleanupFinishedGames() {
+        activeRooms.values().removeIf(GameRoom::isGameFinished);
     }
 }
