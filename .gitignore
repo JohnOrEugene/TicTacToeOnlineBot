@@ -38,5 +38,4 @@ build/
 ### Mac OS ###
 .DS_Store
 
-# Скрыть файл конфигурации с токеном
 config.properties

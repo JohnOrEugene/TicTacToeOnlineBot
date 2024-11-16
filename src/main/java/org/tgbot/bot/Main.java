@@ -108,32 +108,37 @@ public class Main extends TelegramLongPollingBot {
             return;
         }
 
-        // Отправляем обновлённое состояние доски обоим игрокам
+        // Отправляем статус доски обоим игрокам
         sendTextMessage(room.getPlayer1().getId(), room.getBoardDisplay());
         sendTextMessage(room.getPlayer2().getId(), room.getBoardDisplay());
 
-        // Проверяем состояние игры
+        // Проверяем, завершена ли игра
         if (room.checkWin()) {
-            // Если есть победитель
-            String winnerMessage = "Поздравляем, " + player.getFirstName() + ", вы выиграли!";
-            String loserMessage = "К сожалению, вы проиграли. Победил игрок " + player.getFirstName();
-
+            // Выясняем победителя
             if (room.getCurrentPlayer() == 'X') {
-                sendTextMessage(room.getPlayer1().getId(), winnerMessage);
-                sendTextMessage(room.getPlayer2().getId(), loserMessage);
+                sendTextMessage(room.getPlayer1().getId(), "Поздравляем, " + room.getPlayer1().getFirstName() + ", вы выиграли!");
+                sendTextMessage(room.getPlayer2().getId(), "К сожалению, вы проиграли. Победил игрок " + room.getPlayer1().getFirstName());
             } else {
-                sendTextMessage(room.getPlayer2().getId(), winnerMessage);
-                sendTextMessage(room.getPlayer1().getId(), loserMessage);
+                sendTextMessage(room.getPlayer2().getId(), "Поздравляем, " + room.getPlayer2().getFirstName() + ", вы выиграли!");
+                sendTextMessage(room.getPlayer1().getId(), "К сожалению, вы проиграли. Победил игрок " + room.getPlayer2().getFirstName());
             }
-            roomManager.removeRoom(room.getRoomCode()); // Удаляем комнату
+            roomManager.removeRoom(room.getRoomCode());
         } else if (room.isDraw()) {
-            // Если ничья
-            String drawMessage = "Игра окончена. Ничья!";
-            sendTextMessage(room.getPlayer1().getId(), drawMessage);
-            sendTextMessage(room.getPlayer2().getId(), drawMessage);
-            roomManager.removeRoom(room.getRoomCode()); // Удаляем комнату
+            sendTextMessage(room.getPlayer1().getId(), "Игра окончена. Ничья!");
+            sendTextMessage(room.getPlayer2().getId(), "Игра окончена. Ничья!");
+            roomManager.removeRoom(room.getRoomCode());
+        } else {
+            // Сообщаем, чей ход следующий
+            if (room.getCurrentPlayer() == 'X') {
+                sendTextMessage(room.getPlayer1().getId(), "Ваш ход, " + room.getPlayer1().getFirstName() + " (X).");
+                sendTextMessage(room.getPlayer2().getId(), "Ход игрока " + room.getPlayer1().getFirstName() + " (X).");
+            } else {
+                sendTextMessage(room.getPlayer2().getId(), "Ваш ход, " + room.getPlayer2().getFirstName() + " (O).");
+                sendTextMessage(room.getPlayer1().getId(), "Ход игрока " + room.getPlayer2().getFirstName() + " (O).");
+            }
         }
     }
+
 
 
 
