@@ -49,8 +49,4 @@ public class RoomManager {
         activeRooms.remove(roomCode);
     }
 
-    // Метод для очистки завершенных игр
-    public void cleanupFinishedGames() {
-        activeRooms.values().removeIf(GameRoom::isGameFinished);
-    }
 }

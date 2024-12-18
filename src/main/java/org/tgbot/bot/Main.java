@@ -102,9 +102,9 @@ public class Main extends TelegramLongPollingBot {
             return;
         }
 
-        boolean moveSuccessful = room.makeMove(row, col);
+        boolean moveSuccessful = room.makeMove(row, col, player);
         if (!moveSuccessful) {
-            sendTextMessage(message.getChatId(), "Этот ход недоступен. Попробуйте другое место.");
+            sendTextMessage(message.getChatId(), "Этот ход недоступен(Комната ожидает второго пользователя / Попробуйте другое место");
             return;
         }
 

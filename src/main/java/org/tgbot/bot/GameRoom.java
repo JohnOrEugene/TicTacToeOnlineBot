@@ -43,16 +43,12 @@ public class GameRoom {
         return ownerId;
     }
 
-    public GameStatus getStatus() {
-        return status;
-    }
-
     public void setPlayer2(User player2) {
         this.player2 = player2;
-        this.status = GameStatus.IN_PROGRESS;
+        this.status = GameStatus.IN_PROGRESS; // Меняем статус на IN_PROGRESS, когда второй игрок присоединился
     }
 
-    // Проверяет заполнена ли сама комната(room)
+    // Проверяет, заполнена ли комната
     public boolean isFull() {
         return player1 != null && player2 != null;
     }
@@ -63,7 +59,17 @@ public class GameRoom {
     }
 
     // Метод для выполнения хода игрока
-    public boolean makeMove(int row, int col) {
+    public boolean makeMove(int row, int col, User player) {
+        if (status != GameStatus.IN_PROGRESS) {
+            // Если комната еще не полная или игра не началась, не разрешаем делать ход
+            return false;
+        }
+
+        // Убедимся, что ход делают именно тот игрок, чья очередь
+        if (!isPlayerTurn(player)) {
+            return false; // Игрок не может ходить, если это не его очередь
+        }
+
         // Передаем ход в игру и проверяем его успешность
         if (game.makeMove(row, col)) {
             if (game.checkWin() || TicTacToeGame.isBoardFull()) {
@@ -74,10 +80,14 @@ public class GameRoom {
         return false; // Ход не выполнен
     }
 
-    // Метод для переключения хода
-    // void switchPlayer() {
-    //    game.switchPlayer();
-    //}
+    // Метод для проверки, чей сейчас ход
+    private boolean isPlayerTurn(User player) {
+        if (game.getCurrentPlayer() == 'X') {
+            return player.getId().equals(player1.getId());
+        } else {
+            return player.getId().equals(player2.getId());
+        }
+    }
 
     // Проверка победителя
     public boolean checkWin() {
@@ -98,30 +108,4 @@ public class GameRoom {
     public boolean isGameFinished() {
         return game.isFinished(); // Используем метод игры для проверки завершённости
     }
-
-    // Получение сообщения с текущим результатом игры
-    // Обновленный метод getGameStatusMessage
-    public String getGameStatusMessage() {
-        if (game.isFinished()) {
-            if (game.checkWin()) {
-                // Если есть победитель, возвращаем имя победителя
-                if (game.getCurrentPlayer() == 'X') {
-                    return "Поздравляем, " + player1.getFirstName() + ", вы победили!";
-                } else {
-                    return "Поздравляем, " + player2.getFirstName() + ", вы победили!";
-                }
-            } else {
-                return "Игра закончена. Ничья!";
-            }
-        }
-
-        // Если игра не закончена, выводим имя следующего игрока, который ходит
-        if (game.getCurrentPlayer() == 'X') {
-            return "Ход следующего игрока: X - " + player1.getFirstName();
-        } else {
-            return "Ход следующего игрока: O - " + player2.getFirstName();
-        }
-    }
-
-
 }

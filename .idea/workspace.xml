@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="d2e723bb-8b5a-4ca5-9b87-32ad6c7c85e5" name="Changes" comment="Initial commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/BotInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/BotInitializer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/GameRoom.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/GameRoom.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/RoomManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/RoomManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/TicTacToeGame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/tgbot/bot/TicTacToeGame.java" afterDir="false" />
     </list>

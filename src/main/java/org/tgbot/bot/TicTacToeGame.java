@@ -62,17 +62,6 @@ public class TicTacToeGame {
         return true; // Ход выполнен успешно
     }
 
-
-    // Переключение хода между игроками
-    /*
-    public void switchPlayer() {
-        if (currentPlayer == 'X') {
-            currentPlayer = 'O';
-        } else {
-            currentPlayer = 'X';
-        }
-    }
-    */
     // Проверка победителя
     public boolean checkWin() {
         return (checkRows() || checkColumns() || checkDiagonals());
