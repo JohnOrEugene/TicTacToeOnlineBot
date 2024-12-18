@@ -33,14 +33,18 @@ public class TicTacToeGame {
 
     // Выполнение хода игрока
     public boolean makeMove(int row, int col) {
-        // Проверка, если игра уже завершена
+        // Проверяем, завершена ли игра
         if (gameFinished) {
-            return false;  // Ход невозможен, так как игра окончена
+            return false; // Ход невозможен, так как игра окончена
         }
 
-        // Проверка на корректность координат и занятость клетки
+        // Преобразуем координаты из диапазона [1,3] в [0,2]
+        row -= 1;
+        col -= 1;
+
+        // Проверка на корректность координат
         if (row < 0 || row > 2 || col < 0 || col > 2 || board[row][col] != '-') {
-            return false; // Ход невозможен из-за неверных данных
+            return false; // Ход невозможен
         }
 
         // Совершаем ход
@@ -49,18 +53,18 @@ public class TicTacToeGame {
         // Проверка на победу или ничью
         if (checkWin()) {
             gameFinished = true;
-            return true; // Возвращаем true для успешного хода
-        } else if (TicTacToeGame.isBoardFull()) {
+        } else if (isBoardFull()) {
             gameFinished = true;
-            return true; // Возвращаем true, чтобы отметить завершение игры
+        } else {
+            // Переключение хода
+            currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
         }
-
-        // Переключение хода между игроками
-        currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
         return true; // Ход выполнен успешно
     }
 
+
     // Переключение хода между игроками
+    /*
     public void switchPlayer() {
         if (currentPlayer == 'X') {
             currentPlayer = 'O';
@@ -68,7 +72,7 @@ public class TicTacToeGame {
             currentPlayer = 'X';
         }
     }
-
+    */
     // Проверка победителя
     public boolean checkWin() {
         return (checkRows() || checkColumns() || checkDiagonals());

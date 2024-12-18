@@ -13,7 +13,7 @@ public class RoomManager {
     public String generateRoomCode() {
         String code;
         do {
-            code = String.valueOf(100000 + random.nextInt(900000)); // Генерация 6-значного кода
+            code = String.valueOf(100 + random.nextInt(900)); // Генерация 6-значного кода
         } while (activeRooms.containsKey(code));
         return code;
     }
